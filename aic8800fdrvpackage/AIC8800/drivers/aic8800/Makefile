@@ -57,7 +57,7 @@ endif
 
 ###########################################
 
-MAKEFLAGS +=-j$(shell nproc)
+MAKEFLAGS +=-j4
 
 all: modules
 modules:
