@@ -2,6 +2,8 @@
 
 ## 介绍
 
+![AX300 单频高增益无线 USB 网卡](./docs/AX300.png)
+
 本项目是 [TL-XDN6000H免驱版 V1.0 Linux系统驱动程序20250118](https://resource.tp-link.com.cn/pc/docCenter/showDoc?productId=3217&type=DRIVER&id=1737698106348416) 驱动的改版，用于在某些 Linux 设备上能够成功安装驱动。
 
 ## 动机
