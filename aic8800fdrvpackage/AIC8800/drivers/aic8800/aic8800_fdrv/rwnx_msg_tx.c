@@ -167,7 +167,7 @@ static inline void limit_chan_bw(u8_l *bw, u16_l primary, u16_l *center1)
     *center1 = primary + new_oft;
 }
 
-struct rwnx_cmd *rwnx_cmd_malloc(void){
+static struct rwnx_cmd *rwnx_cmd_malloc(void){
 	struct rwnx_cmd *cmd = NULL;
 	unsigned long flags = 0;
 
@@ -614,7 +614,7 @@ int rwnx_send_add_if(struct rwnx_hw *rwnx_hw, const unsigned char *mac,
     //case NL80211_IFTYPE_P2P_DEVICE:
     case NL80211_IFTYPE_P2P_CLIENT:
         add_if_req_param->p2p = true;
-        // no break
+        fallthrough;
     #endif /* CONFIG_RWNX_FULLMAC */
     case NL80211_IFTYPE_STATION:
         add_if_req_param->type = MM_STA;
@@ -627,7 +627,7 @@ int rwnx_send_add_if(struct rwnx_hw *rwnx_hw, const unsigned char *mac,
     #ifdef CONFIG_RWNX_FULLMAC
     case NL80211_IFTYPE_P2P_GO:
         add_if_req_param->p2p = true;
-        // no break
+        fallthrough;
     #endif /* CONFIG_RWNX_FULLMAC */
     case NL80211_IFTYPE_AP:
         add_if_req_param->type = MM_AP;
@@ -1443,6 +1443,7 @@ int rwnx_send_vendor_hwconfig_req(struct rwnx_hw *rwnx_hw, uint32_t hwconfig_id,
 			printk("get_chip_temp err=%d\n", error);
 			}
 		}
+		fallthrough;
 	case CUSTOMIZED_FREQ_REQ:
 		/* Build the CUSTOMIZED_FREQ_REQ message */
 		req5 = rwnx_msg_zalloc(MM_SET_VENDOR_HWCONFIG_REQ, TASK_MM, DRV_TASK_ID, sizeof(struct mm_set_customized_freq_req));

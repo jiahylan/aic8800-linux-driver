@@ -23,6 +23,7 @@
 #include "rwnx_tdls.h"
 #endif /* CONFIG_RWNX_FULLMAC */
 #include "rwnx_events.h"
+#include "rwnx_msg_rx.h"
 #include "rwnx_compat.h"
 #include "aicwf_txrxif.h"
 #ifdef CONFIG_USE_WIRELESS_EXT

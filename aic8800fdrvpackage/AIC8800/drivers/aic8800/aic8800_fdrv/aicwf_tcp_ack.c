@@ -14,7 +14,7 @@ struct msg_buf *intf_tcp_alloc_msg(struct msg_buf *msg)
 	return msg;
 }
 						
-void intf_tcp_drop_msg(struct rwnx_hw *priv,
+static void intf_tcp_drop_msg(struct rwnx_hw *priv,
 					    struct msg_buf *msg)
 {
 	//printk("%s \n",__func__);
@@ -25,9 +25,9 @@ void intf_tcp_drop_msg(struct rwnx_hw *priv,
 }
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 14, 0) 
-void tcp_ack_timeout(unsigned long data)
+static void tcp_ack_timeout(unsigned long data)
 #else
-void tcp_ack_timeout(struct timer_list *t)
+static void tcp_ack_timeout(struct timer_list *t)
 #endif
 {
 	//printk("%s \n",__func__);
@@ -106,7 +106,15 @@ void tcp_ack_deinit(struct rwnx_hw *priv)
 		drop_msg = NULL;
 
 		write_seqlock_bh(&ack_m->ack_info[i].seqlock);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+		timer_delete(&ack_m->ack_info[i].timer);
+#else
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+		timer_delete(&ack_m->ack_info[i].timer);
+#else
 		del_timer(&ack_m->ack_info[i].timer);
+#endif
+#endif
 		drop_msg = ack_m->ack_info[i].msgbuf;
 		ack_m->ack_info[i].msgbuf = NULL;
 		write_sequnlock_bh(&ack_m->ack_info[i].seqlock);
@@ -116,7 +124,7 @@ void tcp_ack_deinit(struct rwnx_hw *priv)
 	}
 }
 
-int tcp_check_quick_ack(unsigned char *buf,
+static int tcp_check_quick_ack(unsigned char *buf,
 				      struct tcp_ack_msg *msg)
 {
 	int ip_hdr_len;
@@ -209,7 +217,7 @@ int is_drop_tcp_ack(struct tcphdr *tcphdr, int tcp_tot_len,
  *	2 for other ack whith more info
  */
 
-int tcp_check_ack(unsigned char *buf,
+static int tcp_check_ack(unsigned char *buf,
 				struct tcp_ack_msg *msg,
 				unsigned short *win_scale)
 {
@@ -253,7 +261,7 @@ int tcp_check_ack(unsigned char *buf,
 }
 
 /* return val: -1 for not match, others for match */
-int tcp_ack_match(struct tcp_ack_manage *ack_m,
+static int tcp_ack_match(struct tcp_ack_manage *ack_m,
 				struct tcp_ack_msg *ack_msg)
 {
 	int i, ret = -1;
@@ -281,7 +289,7 @@ int tcp_ack_match(struct tcp_ack_manage *ack_m,
 }
 
 
-void tcp_ack_update(struct tcp_ack_manage *ack_m)
+static void tcp_ack_update(struct tcp_ack_manage *ack_m)
 {
 	int i;
 	struct tcp_ack_info *ack_info;
@@ -306,7 +314,7 @@ void tcp_ack_update(struct tcp_ack_manage *ack_m)
 }
 
 /* return val: -1 for no index, others for index */
-int tcp_ack_alloc_index(struct tcp_ack_manage *ack_m)
+static int tcp_ack_alloc_index(struct tcp_ack_manage *ack_m)
 {
 	int i, ret = -1;
 	struct tcp_ack_info *ack_info;
@@ -344,95 +352,7 @@ int tcp_ack_alloc_index(struct tcp_ack_manage *ack_m)
 }
 
 
-/* return val: 0 for not handle tx, 1 for handle tx */
-int tcp_ack_handle(struct msg_buf *new_msgbuf,
-			  struct tcp_ack_manage *ack_m,
-			  struct tcp_ack_info *ack_info,
-			  struct tcp_ack_msg *ack_msg,
-			  int type)
-{
-	int quick_ack = 0;
-	struct tcp_ack_msg *ack;
-	int ret = 0;
-	struct msg_buf *drop_msg = NULL;
-
-	//printk("%s %d",__func__,type);
-	write_seqlock_bh(&ack_info->seqlock);
-
-	ack_info->last_time = jiffies;
-	ack = &ack_info->ack_msg;
-
-	if (type == 2) {
-		if (U32_BEFORE(ack->seq, ack_msg->seq)) {
-			ack->seq = ack_msg->seq;
-			if (ack_info->psh_flag &&
-			    !U32_BEFORE(ack_msg->seq,
-					       ack_info->psh_seq)) {
-				ack_info->psh_flag = 0;
-			}
-
-			if (ack_info->msgbuf) {
-				//printk("%lx \n",ack_info->msgbuf);
-				drop_msg = ack_info->msgbuf;
-				ack_info->msgbuf = NULL;
-				del_timer(&ack_info->timer);
-			}else{
-				//printk("msgbuf is NULL \n");
-			}
-
-			ack_info->in_send_msg = NULL;
-			ack_info->drop_cnt = atomic_read(&ack_m->max_drop_cnt);
-		} else {
-			printk("%s before abnormal ack: %d, %d\n",
-			       __func__, ack->seq, ack_msg->seq);
-			drop_msg = new_msgbuf;
-			ret = 1;
-		}
-	} else if (U32_BEFORE(ack->seq, ack_msg->seq)) {
-		if (ack_info->msgbuf) {
-			drop_msg = ack_info->msgbuf;
-			ack_info->msgbuf = NULL;
-		}
-
-		if (ack_info->psh_flag &&
-		    !U32_BEFORE(ack_msg->seq, ack_info->psh_seq)) {
-			ack_info->psh_flag = 0;
-			quick_ack = 1;
-		} else {
-			ack_info->drop_cnt++;
-		}
-
-		ack->seq = ack_msg->seq;
-
-		if (quick_ack || (!ack_info->in_send_msg &&
-				  (ack_info->drop_cnt >=
-				   atomic_read(&ack_m->max_drop_cnt)))) {
-			ack_info->drop_cnt = 0;
-			ack_info->in_send_msg = new_msgbuf;
-			del_timer(&ack_info->timer);
-		} else {
-			ret = 1;
-			ack_info->msgbuf = new_msgbuf;
-			if (!timer_pending(&ack_info->timer))
-				mod_timer(&ack_info->timer,
-					  (jiffies + msecs_to_jiffies(5)));
-		}
-	} else {
-		printk("%s before ack: %d, %d\n",
-		       __func__, ack->seq, ack_msg->seq);
-		drop_msg = new_msgbuf;
-		ret = 1;
-	}
-
-	write_sequnlock_bh(&ack_info->seqlock);
-
-	if (drop_msg)
-		intf_tcp_drop_msg(ack_m->priv, drop_msg);// drop skb
-
-	return ret;
-}
-
-int tcp_ack_handle_new(struct msg_buf *new_msgbuf,
+static int tcp_ack_handle_new(struct msg_buf *new_msgbuf,
 			  struct tcp_ack_manage *ack_m,
 			  struct tcp_ack_info *ack_info,
 			  struct tcp_ack_msg *ack_msg,
@@ -472,7 +392,11 @@ int tcp_ack_handle_new(struct msg_buf *new_msgbuf,
 			ack_info->drop_cnt = 0;
 			//send_msg = new_msgbuf;
 			ack_info->in_send_msg = new_msgbuf;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+			timer_delete(&ack_info->timer);
+#else
 			del_timer(&ack_info->timer);
+#endif
 		}else{
 			ret = 1;
 			ack_info->msgbuf = new_msgbuf;

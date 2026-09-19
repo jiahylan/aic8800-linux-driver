@@ -1,13 +1,31 @@
 #!/bin/bash
-rm /etc/udev/rules.d/aic.rules
+
+KVER=$(uname -r)
+SRC=/AIC8800
+
+echo "Removing AIC8800 WiFi driver..."
+
+# unload modules
+rmmod aic8800_fdrv 2>/dev/null || true
+rmmod aic_load_fw 2>/dev/null || true
+
+# remove udev rules
+rm -f /etc/udev/rules.d/aic.rules
 udevadm control --reload
-echo "Uninstall aic8800 wifi driver!!!!!"
-rmmod aic8800_fdrv
-rmmod aic_load_fw
-cd /AIC8800/drivers/aic8800/
-make clean
-make uninstall
-cd /AIC8800/aicrf_test
-make clean
+
+# clean build artifacts and uninstall modules
+cd ${SRC}/drivers/aic8800/ 2>/dev/null && make clean 2>/dev/null || true
+make uninstall 2>/dev/null || true
+
+cd ${SRC}/aicrf_test/ 2>/dev/null && make clean 2>/dev/null || true
+
+# remove firmware
 rm -rf /lib/firmware/aic8800DC/
-#exit 0
+
+# remove installed source
+rm -rf ${SRC}
+
+depmod -a ${KVER} 2>/dev/null || true
+
+echo "AIC8800 WiFi driver removed."
+exit 0

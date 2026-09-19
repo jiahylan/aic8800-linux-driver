@@ -319,7 +319,7 @@ int system_config_8800d80(struct aic_usb_dev *usb_dev){
 }
 
 
-int aicbt_ext_patch_data_load(struct aic_usb_dev *usb_dev, struct aicbt_patch_info_t *patch_info)
+static int aicbt_ext_patch_data_load(struct aic_usb_dev *usb_dev, struct aicbt_patch_info_t *patch_info)
 {
     int ret = 0;
     uint32_t ext_patch_nb = patch_info->ext_patch_nb;

@@ -205,7 +205,7 @@ static int parse_line (char *line, char *argv[])
 	return nargs;
 }
 
-unsigned int command_strtoul(const char *cp, char **endp, unsigned int base)
+static unsigned int command_strtoul(const char *cp, char **endp, unsigned int base)
 {
 	unsigned int result = 0, value, is_neg = 0;
 
@@ -236,11 +236,6 @@ unsigned int command_strtoul(const char *cp, char **endp, unsigned int base)
 	if (endp)
 		*endp = (char *)cp;
 	return result;
-}
-
-int str_starts(const char *str, const char *start)
-{
-	return strncmp(str, start, strlen(start)) == 0;
 }
 
 /*
@@ -1310,7 +1305,7 @@ static void print_help(const char *cmd)
 	}
 }
 
-int handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
+static int handle_private_cmd(struct net_device *net, char *command, u32 cmd_len)
 {
 	const struct aic_priv_cmd *cmd, *match = NULL;
 	int count;
@@ -1409,7 +1404,7 @@ void set_vendor_extension_ie(char *command){
 int rwnx_cfg80211_set_monitor_channel_(struct wiphy *wiphy,
                                              struct cfg80211_chan_def *chandef);
 int rwnx_atoi2(char *value, int c_len);
-void set_mon_chan(struct rwnx_vif *vif, char *parameter){
+static void __maybe_unused set_mon_chan(struct rwnx_vif *vif, char *parameter){
     struct cfg80211_chan_def *chandef = NULL;
     int freq = 0;
     

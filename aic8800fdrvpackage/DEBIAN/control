@@ -1,5 +1,5 @@
 Package: aic8800fdrvpackage
-Version: 1.1.0
+Version: 1.2.0
 Architecture: all
 Maintainer: aic
-Description: aic8800 wifi driver deb package
+Description: AIC8800 WiFi driver (compiled from source during install)

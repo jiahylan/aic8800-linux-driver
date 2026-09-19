@@ -810,6 +810,16 @@ int8_t rwnx_atoi(char *value){
 	return result;
 }
 
+/* Forward declarations for exported functions */
+void get_fw_path(char* fw_path);
+void set_testmode(int val);
+int get_testmode(void);
+int get_hardware_info(void);
+int get_adap_test(void);
+void get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap);
+void get_userconfig_txpwr_idx(txpwr_idx_conf_t *txpwr_idx);
+void get_userconfig_txpwr_ofst(txpwr_ofst_conf_t *txpwr_ofst);
+
 void get_fw_path(char* fw_path){
 	if (strlen(aic_fw_path) > 0) {
 		memcpy(fw_path, aic_fw_path, strlen(aic_fw_path));
@@ -909,7 +919,7 @@ void get_userconfig_txpwr_ofst(txpwr_ofst_conf_t *txpwr_ofst){
 
 EXPORT_SYMBOL(get_userconfig_txpwr_ofst);
 
-void rwnx_plat_userconfig_set_value(char *command, char *value){	
+static void rwnx_plat_userconfig_set_value(char *command, char *value){	
 	//TODO send command
 	printk("%s:command=%s value=%s \r\n", __func__, command, value);
 	if(!strcmp(command, "enable")){
@@ -957,7 +967,7 @@ void rwnx_plat_userconfig_set_value(char *command, char *value){
 	}
 }
 
-void rwnx_plat_userconfig_parsing(char *buffer, int size){
+static void rwnx_plat_userconfig_parsing(char *buffer, int size){
     int i = 0;
 	int parse_state = 0;
 	char command[30];

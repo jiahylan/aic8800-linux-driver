@@ -1,6 +1,10 @@
 #include <linux/slab.h>
 #include "aicwf_debug.h"
 
+/* Forward declarations for exported functions */
+void *aicwf_prealloc_txq_alloc(size_t size);
+void aicwf_prealloc_txq_free(void);
+
 struct prealloc_txq{
     int prealloced;
     void *txq;

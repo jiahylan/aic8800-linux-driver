@@ -195,4 +195,7 @@ void rwnx_txq_credit_update(struct rwnx_hw *rwnx_hw, int sta_idx, u8 tid,
                             s8 update);
 void rwnx_tx_push(struct rwnx_hw *rwnx_hw, struct rwnx_txhdr *txhdr, int flags);
 
+struct msg_buf;
+int intf_tx(struct rwnx_hw *priv, struct msg_buf *msg);
+
 #endif /* _RWNX_TX_H_ */

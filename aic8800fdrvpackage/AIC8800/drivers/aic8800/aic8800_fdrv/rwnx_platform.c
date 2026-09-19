@@ -1366,7 +1366,11 @@ static int rwnx_plat_patch_load(struct rwnx_hw *rwnx_hw)
     if(rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8800DC ||
         rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8800DW){
 #ifndef ANDROID_PLATFORM
-        sprintf(aic_fw_path, "%s/%s", aic_fw_path, "aic8800DC");
+        {
+            char tmp[FW_PATH_MAX_LEN];
+            snprintf(tmp, sizeof(tmp), "%s/%s", aic_fw_path, "aic8800DC");
+            strscpy(aic_fw_path, tmp, sizeof(aic_fw_path));
+        }
 #endif
         AICWFDBG(LOGINFO, "testmode=%d\n", testmode);
         if (chip_sub_id == 0) {
@@ -1736,7 +1740,7 @@ static int rwnx_check_fw_compatibility(struct rwnx_hw *rwnx_hw)
 #endif
 #endif /* !CONFIG_RWNX_FHOST */
 
-int rwnx_atoi2(char *value, int c_len)
+static int __maybe_unused rwnx_atoi2(char *value, int c_len)
 {
     int len = 0;
     int i = 0;
@@ -1763,7 +1767,7 @@ int rwnx_atoi2(char *value, int c_len)
 }
 
 
-int rwnx_atoi(char *value)
+static int rwnx_atoi(char *value)
 {
     int len = 0;
     int i = 0;
@@ -2098,7 +2102,7 @@ void get_userconfig_txpwr_loss(txpwr_loss_conf_t *txpwr_loss)
     AICWFDBG(LOGINFO, "%s:loss_value:%d\r\n",      __func__, txpwr_loss->loss_value);
 }
 
-void get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap)
+static void __maybe_unused get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap)
 {
     *xtal_cap = userconfig_info.xtal_cap;
 
@@ -2107,7 +2111,7 @@ void get_userconfig_xtal_cap(xtal_cap_conf_t *xtal_cap)
     AICWFDBG(LOGINFO, "%s:xtal_cap_fine:%d\r\n", __func__, xtal_cap->xtal_cap_fine);
 }
 
-void rwnx_plat_nvram_set_value(char *command, char *value)
+static void rwnx_plat_nvram_set_value(char *command, char *value)
 {
     //TODO send command
     AICWFDBG(LOGINFO, "%s:command=%s value=%s\n", __func__, command, value);
@@ -2409,7 +2413,7 @@ void rwnx_plat_nvram_set_value(char *command, char *value)
     }
 
 }
-void rwnx_plat_nvram_set_value_8800d80x2(char *command, char *value)
+static void rwnx_plat_nvram_set_value_8800d80x2(char *command, char *value)
 {
     //TODO send command
     AICWFDBG(LOGINFO, "%s:command=%s value=%s\n", __func__, command, value);

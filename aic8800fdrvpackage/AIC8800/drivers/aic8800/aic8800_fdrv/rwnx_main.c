@@ -37,6 +37,9 @@
 #endif //(CONFIG_RWNX_BFMER)
 #include "rwnx_tdls.h"
 #include "rwnx_events.h"
+/* Forward declaration for rwnx_select_queue before rwnx_compat.h macro */
+u16 rwnx_select_queue(struct net_device *dev, struct sk_buff *skb,
+                      struct net_device *sb_dev);
 #include "rwnx_compat.h"
 #include "rwnx_version.h"
 #include "rwnx_main.h"
@@ -1073,9 +1076,7 @@ static void rwnx_csa_finish(struct work_struct *ws)
         } else
             rwnx_txq_vif_stop(vif, RWNX_TXQ_STOP_CHAN, rwnx_hw);
         spin_unlock_bh(&rwnx_hw->cb_lock);
-#if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION3)
-		cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0, 0);
-#elif (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
+#if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
 		cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0);
 #else
 		cfg80211_ch_switch_notify(vif->ndev, &csa->chandef);
@@ -1134,7 +1135,7 @@ void rwnx_external_auth_disable(struct rwnx_vif *vif)
  *
  * If there is no link then the power mode for next peer is used;
  */
-void rwnx_update_mesh_power_mode(struct rwnx_vif *vif)
+static void rwnx_update_mesh_power_mode(struct rwnx_vif *vif)
 {
     enum nl80211_mesh_power_mode mesh_pm;
     struct rwnx_sta *sta;
@@ -1854,7 +1855,7 @@ static struct rwnx_vif *rwnx_interface_add(struct rwnx_hw *rwnx_hw,
         vif->ap.generation = 0;
         vif->ap.mesh_pm = NL80211_MESH_POWER_ACTIVE;
         vif->ap.next_mesh_pm = NL80211_MESH_POWER_ACTIVE;
-        // no break
+        fallthrough;
     case NL80211_IFTYPE_AP:
         INIT_LIST_HEAD(&vif->ap.sta_list);
         memset(&vif->ap.bcn, 0, sizeof(vif->ap.bcn));
@@ -1951,9 +1952,9 @@ err:
 
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
-void aicwf_p2p_alive_timeout(ulong data)
+static void aicwf_p2p_alive_timeout(ulong data)
 #else
-void aicwf_p2p_alive_timeout(struct timer_list *t)
+static void aicwf_p2p_alive_timeout(struct timer_list *t)
 #endif
 {
     struct rwnx_hw *rwnx_hw;
@@ -1963,6 +1964,9 @@ void aicwf_p2p_alive_timeout(struct timer_list *t)
     #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 15, 0)
     rwnx_vif = (struct rwnx_vif *)data;
     rwnx_hw = rwnx_vif->rwnx_hw;
+    #elif LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+    rwnx_hw = timer_container_of(rwnx_hw, t, p2p_alive_timer);
+    rwnx_vif = rwnx_hw->p2p_dev_vif;
     #else
     rwnx_hw = from_timer(rwnx_hw, t, p2p_alive_timer);
     rwnx_vif = rwnx_hw->p2p_dev_vif;
@@ -2309,7 +2313,7 @@ static int rwnx_cfg80211_change_iface(struct wiphy *wiphy,
         INIT_LIST_HEAD(&vif->ap.proxy_list);
         vif->ap.create_path = false;
         vif->ap.generation = 0;
-        // no break
+        fallthrough;
     case NL80211_IFTYPE_AP:
     case NL80211_IFTYPE_P2P_GO:
         INIT_LIST_HEAD(&vif->ap.sta_list);
@@ -2460,7 +2464,11 @@ static void rwnx_cfgp2p_stop_p2p_device(struct wiphy *wiphy, struct wireless_dev
 	if (rwnx_vif == rwnx_hw->p2p_dev_vif) {
 		rwnx_hw->is_p2p_alive = 0;
 		if (timer_pending(&rwnx_hw->p2p_alive_timer)) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+			timer_delete_sync(&rwnx_hw->p2p_alive_timer);
+#else
 			del_timer_sync(&rwnx_hw->p2p_alive_timer);
+#endif
 		}
 		if (rwnx_vif->up) {
 			rwnx_send_remove_if(rwnx_hw, rwnx_vif->vif_index, true);
@@ -2479,7 +2487,7 @@ static void rwnx_cfgp2p_stop_p2p_device(struct wiphy *wiphy, struct wireless_dev
     return;
 }
 
-int rwnx_send_check_p2p(struct cfg80211_scan_request *param){
+static int __maybe_unused rwnx_send_check_p2p(struct cfg80211_scan_request *param){
 	int index = (u8)min_t(int, SCAN_SSID_MAX, param->n_ssids);
 	int i = 0;
 
@@ -3303,7 +3311,7 @@ static int rwnx_cfg80211_del_station_compat(struct wiphy *wiphy,
 }
 
 
-void apm_staloss_work_process(struct work_struct *work)
+static void apm_staloss_work_process(struct work_struct *work)
 {
 	struct rwnx_hw *rwnx_hw = container_of(work, struct rwnx_hw, apmStalossWork);
 	struct rwnx_sta *cur, *tmp;
@@ -3417,7 +3425,7 @@ void apm_staloss_work_process(struct work_struct *work)
 }
 
 
-void apm_probe_sta_work_process(struct work_struct *work)
+static void apm_probe_sta_work_process(struct work_struct *work)
 {
        struct apm_probe_sta *probe_sta = container_of(work, struct apm_probe_sta, apmprobestaWork);
        struct rwnx_vif *rwnx_vif = container_of(probe_sta, struct rwnx_vif, sta_probe);
@@ -3844,6 +3852,9 @@ cfg80211_chandef_identical(const struct cfg80211_chan_def *chandef1,
 #endif
 
 static int rwnx_cfg80211_set_monitor_channel(struct wiphy *wiphy,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+                                             struct net_device *dev,
+#endif
                                              struct cfg80211_chan_def *chandef)
 {
     struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -3899,7 +3910,11 @@ static int rwnx_cfg80211_set_monitor_channel(struct wiphy *wiphy,
 
 int rwnx_cfg80211_set_monitor_channel_(struct wiphy *wiphy,
                                              struct cfg80211_chan_def *chandef){
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+    return rwnx_cfg80211_set_monitor_channel(wiphy, NULL, chandef);
+#else
     return rwnx_cfg80211_set_monitor_channel(wiphy, chandef);
+#endif
 }
 
 
@@ -3907,7 +3922,7 @@ int rwnx_cfg80211_set_monitor_channel_(struct wiphy *wiphy,
  * @probe_client: probe an associated client, must return a cookie that it
  *	later passes to cfg80211_probe_status().
  */
-int rwnx_cfg80211_probe_client(struct wiphy *wiphy, struct net_device *dev,
+static int rwnx_cfg80211_probe_client(struct wiphy *wiphy, struct net_device *dev,
             const u8 *peer, u64 *cookie)
 {
     //struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -3944,7 +3959,7 @@ int rwnx_cfg80211_probe_client(struct wiphy *wiphy, struct net_device *dev,
  *	registered. Note that this callback may not sleep, and cannot run
  *	concurrently with itself.
  */
-void rwnx_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
+static void __maybe_unused rwnx_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0))
                    struct net_device *dev,
 #else
@@ -3960,7 +3975,11 @@ void rwnx_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
  *	have changed. The actual parameter values are available in
  *	struct wiphy. If returning an error, no value should be changed.
  */
-static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
+static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+    int radio_idx,
+#endif
+    u32 changed)
 {
     return 0;
 }
@@ -3976,6 +3995,9 @@ static int rwnx_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
 static int rwnx_cfg80211_set_tx_power(struct wiphy *wiphy,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 8, 0)
  struct wireless_dev *wdev,
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+                                      int radio_idx,
 #endif
                                       enum nl80211_tx_power_setting type, int mbm)
 {
@@ -4375,7 +4397,11 @@ static int rwnx_cfg80211_get_channel(struct wiphy *wiphy,
     if (rwnx_vif->vif_index == rwnx_hw->monitor_vif)
     {
         //retrieve channel from firmware
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0)
+        rwnx_cfg80211_set_monitor_channel(wiphy, NULL, NULL);
+#else
         rwnx_cfg80211_set_monitor_channel(wiphy, NULL);
+#endif
     }
 
     //Check if channel context is valid
@@ -4459,6 +4485,7 @@ static int rwnx_cfg80211_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
     switch (RWNX_VIF_TYPE(rwnx_vif)) {
         case NL80211_IFTYPE_AP_VLAN:
             rwnx_vif = rwnx_vif->ap_vlan.master;
+            fallthrough;
         case NL80211_IFTYPE_AP:
         case NL80211_IFTYPE_P2P_GO:
         case NL80211_IFTYPE_MESH_POINT:
@@ -4559,6 +4586,9 @@ int rwnx_cfg80211_start_radar_detection(struct wiphy *wiphy,
                                     #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 15, 0))
                                         , u32 cac_time_ms
                                     #endif
+                                    #if (LINUX_VERSION_CODE >= KERNEL_VERSION(6, 13, 0))
+                                        , int link_id
+#endif
                                         )
 {
     struct rwnx_hw *rwnx_hw = wiphy_priv(wiphy);
@@ -4622,7 +4652,7 @@ int rwnx_cfg80211_set_cqm_rssi_config(struct wiphy *wiphy,
  *	everything. It should do it's best to verify requests and reject them
  *	as soon as possible.
  */
-int rwnx_cfg80211_channel_switch(struct wiphy *wiphy,
+static int rwnx_cfg80211_channel_switch(struct wiphy *wiphy,
                                  struct net_device *dev,
                                  struct cfg80211_csa_settings *params)
 {
@@ -4708,14 +4738,12 @@ int rwnx_cfg80211_channel_switch(struct wiphy *wiphy,
         goto end;
     } else {
         INIT_WORK(&csa->work, rwnx_csa_finish);
-#if LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION4
-		cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, false, 0);
-#elif LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2
-        cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, false);
+#if LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2
+		cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, false);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
-        cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count, params->block_tx);
+		cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count, params->block_tx);
 #else
-        cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count);
+		cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count);
 #endif
 
     }
@@ -4957,7 +4985,7 @@ rwnx_cfg80211_tdls_cancel_channel_switch(struct wiphy *wiphy,
 /**
  * @change_bss: Modify parameters for a given BSS (mainly for AP mode).
  */
-int rwnx_cfg80211_change_bss(struct wiphy *wiphy, struct net_device *dev,
+static int rwnx_cfg80211_change_bss(struct wiphy *wiphy, struct net_device *dev,
                              struct bss_parameters *params)
 {
     struct rwnx_vif *rwnx_vif = netdev_priv(dev);
@@ -5124,6 +5152,7 @@ static int rwnx_fill_station_info(struct rwnx_sta *sta, struct rwnx_vif *vif,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
 	case FORMATMOD_HE_MU:
 		sinfo->rxrate.he_ru_alloc = rx_vect1->he.ru_size;
+		fallthrough;
 	case FORMATMOD_HE_SU:
 	case FORMATMOD_HE_ER:
 		sinfo->rxrate.flags = RATE_INFO_FLAGS_HE_MCS;
@@ -7909,7 +7938,7 @@ static int start_from_bootrom(struct rwnx_hw *rwnx_hw)
 }
 
 
-int rwnx_ic_system_init(struct rwnx_hw *rwnx_hw){
+static int rwnx_ic_system_init(struct rwnx_hw *rwnx_hw){
 
 	if(rwnx_hw->usbdev->chipid == PRODUCT_ID_AIC8801){
 		system_config(rwnx_hw);
@@ -7948,7 +7977,7 @@ int rwnx_ic_system_init(struct rwnx_hw *rwnx_hw){
 }
 
 
-int rwnx_ic_rf_init(struct rwnx_hw *rwnx_hw){
+static int rwnx_ic_rf_init(struct rwnx_hw *rwnx_hw){
 	struct mm_set_rf_calib_cfm cfm;
 	int ret = 0;
 #ifdef CONFIG_5M10M
@@ -7987,7 +8016,7 @@ int rwnx_ic_rf_init(struct rwnx_hw *rwnx_hw){
 #endif
 	return 0;
 }
-void aic_ipc_setting(struct rwnx_vif *rwnx_vif){
+static void __maybe_unused aic_ipc_setting(struct rwnx_vif *rwnx_vif){
     struct rwnx_hw *rwnx_hw = rwnx_vif->rwnx_hw;
 	uint32_t hw_edca = 1;
 	uint32_t hw_cca = 3;
@@ -8574,7 +8603,7 @@ static void __exit rwnx_mod_exit(void)
 
 module_init(rwnx_mod_init);
 module_exit(rwnx_mod_exit);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0) && LINUX_VERSION_CODE < KERNEL_VERSION(6, 13, 0)
 MODULE_IMPORT_NS(VFS_internal_I_am_really_a_filesystem_and_am_NOT_a_driver);
 #endif
 MODULE_FIRMWARE(RWNX_CONFIG_FW_NAME);

@@ -41,6 +41,10 @@ u8 chip_sub_id = 0;
 u8 chip_mcu_id = 0;
 int fw_loaded = 0;
 
+/* Forward declarations for exported functions */
+int aicfw_download_fw_8800(struct aic_usb_dev *usb_dev);
+int aicfw_download_fw(struct aic_usb_dev *usb_dev);
+
 void aicwf_usb_tx_flowctrl(struct aic_usb_dev *usb_dev, bool state)
 {
 }
