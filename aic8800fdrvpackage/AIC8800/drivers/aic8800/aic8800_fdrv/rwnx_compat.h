@@ -430,4 +430,10 @@ enum {
 typedef __s64 time64_t;
 #endif
 
+/* KERNEL 6.0+: in_irq() and in_interrupt() removed */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#define in_irq()       in_hardirq()
+#define in_interrupt() (!in_task())
+#endif
+
 #endif /* _RWNX_COMPAT_H_ */

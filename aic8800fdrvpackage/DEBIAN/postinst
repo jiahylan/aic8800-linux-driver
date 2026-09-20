@@ -1,13 +1,15 @@
 #!/bin/bash
 set -e
 
-KVER=$(uname -r)
-SRC=/AIC8800
+PACKAGE_NAME="aic8800"
+PACKAGE_VERSION="1.2.0"
+SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+FW_SRC="/AIC8800"
 
-echo "Installing AIC8800 WiFi driver for kernel ${KVER}..."
+echo "Installing AIC8800 WiFi driver (DKMS)..."
 
 # udev rules
-cp ${SRC}/aic.rules /etc/udev/rules.d/
+cp ${FW_SRC}/aic.rules /etc/udev/rules.d/
 udevadm trigger
 udevadm control --reload
 echo "udev rules installed."
@@ -19,32 +21,25 @@ fi
 
 # firmware
 rm -rf /lib/firmware/aic8800DC
-cp -rf ${SRC}/fw/aic8800DC /lib/firmware/
+cp -rf ${FW_SRC}/fw/aic8800DC /lib/firmware/
 echo "Firmware installed."
 
-# compile driver
-cd ${SRC}/drivers/aic8800/
-make clean || true
-nice -n 19 make -j4
-if [ $? -ne 0 ]; then
-    echo "ERROR: driver compilation failed"
-    exit 1
+# install source to /usr/src for DKMS
+if [ -d "${SRC}" ]; then
+    dkms remove -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION} --all 2>/dev/null || true
+    rm -rf "${SRC}"
 fi
-make install
-if [ $? -ne 0 ]; then
-    echo "ERROR: driver installation failed"
-    exit 1
-fi
-echo "Driver compiled and installed."
+mkdir -p "${SRC}"
+cp -a ${FW_SRC}/drivers/aic8800/* "${SRC}/"
 
-# load modules
-modprobe cfg80211 2>/dev/null || true
-insmod ${SRC}/drivers/aic8800/aic_load_fw/aic_load_fw.ko
-insmod ${SRC}/drivers/aic8800/aic8800_fdrv/aic8800_fdrv.ko
-echo "Modules loaded."
+# register and build with DKMS
+dkms add -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
+dkms build -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
+dkms install -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
+echo "DKMS modules built and installed."
 
-# compile test tools
-cd ${SRC}/aicrf_test/
+# compile test tools (not kernel modules, build for running kernel only)
+cd ${FW_SRC}/aicrf_test/
 make clean || true
 nice -n 19 make
 make install

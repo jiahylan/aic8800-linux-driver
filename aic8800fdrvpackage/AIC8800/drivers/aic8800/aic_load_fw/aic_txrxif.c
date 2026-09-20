@@ -22,6 +22,10 @@
 #include <linux/sched/signal.h>
 #endif
 #endif
+/* in_interrupt() removed in kernel 6.0+ */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#define in_interrupt() (!in_task())
+#endif
 #include "aic_txrxif.h"
 #include "aicbluetooth.h"
 #include "aicbluetooth_cmds.h"

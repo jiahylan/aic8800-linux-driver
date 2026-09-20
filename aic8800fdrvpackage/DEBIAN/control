@@ -1,5 +1,8 @@
 Package: aic8800fdrvpackage
-Version: 1.2.0
+Version: 1.3.0
 Architecture: all
+Depends: dkms, linux-headers-generic
 Maintainer: aic
-Description: AIC8800 WiFi driver (compiled from source during install)
+Description: AIC8800 WiFi driver with DKMS auto-rebuild support
+ Automatically rebuilds the AIC8800 kernel modules when the kernel
+ is upgraded, using DKMS (Dynamic Kernel Module Support).

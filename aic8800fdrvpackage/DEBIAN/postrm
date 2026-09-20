@@ -1,2 +1,3 @@
 #!/bin/bash
-echo "Uninstall aic8800 wifi driver successful!!!!!"
+echo "AIC8800 WiFi driver uninstalled."
+exit 0

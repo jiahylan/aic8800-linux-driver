@@ -1,0 +1,113 @@
+(base) hylan@hylan2972:~/aic8800-linux-driver$ sudo dpkg -i aic8800fdrvpackage_1.2.0_all.deb 
+[sudo] hylan 的密码： 
+(正在读取数据库 ... 系统当前共安装有 256181 个文件和目录。)
+准备解压 aic8800fdrvpackage_1.2.0_all.deb  ...
+Removing AIC8800 WiFi driver...
+cd aic_load_fw/;make clean;cd ..
+make[1]: 进入目录“/AIC8800/drivers/aic8800/aic_load_fw”
+rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
+make[1]: 离开目录“/AIC8800/drivers/aic8800/aic_load_fw”
+cd aic8800_fdrv/;make clean;cd ..
+make[1]: 进入目录“/AIC8800/drivers/aic8800/aic8800_fdrv”
+rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
+make[1]: 离开目录“/AIC8800/drivers/aic8800/aic8800_fdrv”
+rm -rf modules.order Module.symvers .modules.order.cmd .Module.symvers.cmd .tmp_versions/
+rm -rfv /lib/modules/7.0.0-31-generic/kernel/drivers/net/wireless/aic8800/aic_load_fw.ko
+rm -rfv /lib/modules/7.0.0-31-generic/kernel/drivers/net/wireless/aic8800/aic8800_fdrv.ko
+/sbin/depmod -a 7.0.0-31-generic
+rm *.o wifi_test bt_test
+AIC8800 WiFi driver removed.
+Install aic8800 wifi driver!!!!!
+正在解压 aic8800fdrvpackage (1.2.0) 并覆盖 (1.2.0) ...
+Uninstall aic8800 wifi driver successful!!!!!
+正在设置 aic8800fdrvpackage (1.2.0) ...
+Installing AIC8800 WiFi driver for kernel 7.0.0-31-generic...
+udev rules installed.
+Firmware installed.
+cd aic_load_fw/;make clean;cd ..
+make[1]: 警告: jobserver 不可用: 正使用 -j1。添加 “+” 到父 make 的规则。
+make[1]: 进入目录“/AIC8800/drivers/aic8800/aic_load_fw”
+rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
+make[1]: 离开目录“/AIC8800/drivers/aic8800/aic_load_fw”
+cd aic8800_fdrv/;make clean;cd ..
+make[1]: 警告: jobserver 不可用: 正使用 -j1。添加 “+” 到父 make 的规则。
+make[1]: 进入目录“/AIC8800/drivers/aic8800/aic8800_fdrv”
+/bin/sh: 1: test: -lt: unexpected operator
+rm -rf *.o *.ko *.o.* *.mod.* modules.* Module.* .a* .o* .*.o.* *.mod .tmp* .cache.mk .modules.order.cmd .Module.symvers.cmd
+make[1]: 离开目录“/AIC8800/drivers/aic8800/aic8800_fdrv”
+rm -rf modules.order Module.symvers .modules.order.cmd .Module.symvers.cmd .tmp_versions/
+make -C /lib/modules/7.0.0-31-generic/build M=/AIC8800/drivers/aic8800 ARCH=x86_64 CROSS_COMPILE= modules
+make[1]: 警告: jobserver 不可用: 正使用 -j1。添加 “+” 到父 make 的规则。
+make[1]: 进入目录“/usr/src/linux-headers-7.0.0-31-generic”
+make[2]: 进入目录“/AIC8800/drivers/aic8800”
+warning: the compiler differs from the one used to build the kernel
+  The kernel was built by: x86_64-linux-gnu-gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+  You are using:           gcc-13 (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0
+warning: pahole version differs from the one used to build the kernel
+  The kernel was built with: 125
+  You are using:             0
+make[5]: 警告: 子 make 中强制 -j4: 重置 jobserver 模式。
+  CC [M]  aic_load_fw/aic_bluetooth_main.o
+  CC [M]  aic8800_fdrv/rwnx_wakelock.o
+  CC [M]  aic_load_fw/aicbluetooth.o
+  CC [M]  aic8800_fdrv/rwnx_msg_tx.o
+  CC [M]  aic_load_fw/aicwf_usb.o
+  CC [M]  aic8800_fdrv/rwnx_msg_rx.o
+  CC [M]  aic8800_fdrv/rwnx_utils.o
+  CC [M]  aic_load_fw/aic_txrxif.o
+  CC [M]  aic_load_fw/aicbluetooth_cmds.o
+  CC [M]  aic8800_fdrv/rwnx_cmds.o
+  CC [M]  aic_load_fw/aic_compat_8800d80.o
+  CC [M]  aic8800_fdrv/rwnx_irqs.o
+  CC [M]  aic_load_fw/aic_compat_8800d80x2.o
+  CC [M]  aic_load_fw/md5.o
+  CC [M]  aic8800_fdrv/rwnx_cfgfile.o
+  CC [M]  aic_load_fw/aicwf_txq_prealloc.o
+  CC [M]  aic8800_fdrv/rwnx_strs.o
+  CC [M]  aic8800_fdrv/rwnx_rx.o
+  CC [M]  aic8800_fdrv/rwnx_tx.o
+  LD [M]  aic_load_fw/aic_load_fw.o
+  CC [M]  aic8800_fdrv/rwnx_txq.o
+  CC [M]  aic8800_fdrv/rwnx_main.o
+In file included from /usr/src/linux-headers-7.0.0-31-generic/include/asm-generic/bug.h:31,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/bug.h:193,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/alternative.h:9,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/segment.h:6,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/ptrace.h:5,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/math_emu.h:5,
+                 from /usr/src/linux-headers-7.0.0-31-generic/arch/x86/include/asm/processor.h:13,
+                 from /usr/src/linux-headers-7.0.0-31-generic/include/linux/sched.h:13,
+                 from /usr/src/linux-headers-7.0.0-31-generic/include/linux/ratelimit.h:6,
+                 from /usr/src/linux-headers-7.0.0-31-generic/include/linux/dev_printk.h:16,
+                 from /usr/src/linux-headers-7.0.0-31-generic/include/linux/device.h:15,
+                 from /usr/src/linux-headers-7.0.0-31-generic/include/linux/dma-mapping.h:5,
+                 from aic8800_fdrv/rwnx_rx.c:10:
+aic8800_fdrv/rwnx_rx.c: In function ‘reord_deinit_sta’:
+aic8800_fdrv/rwnx_rx.c:1424:98: error: implicit declaration of function ‘in_irq’ [-Werror=implicit-function-declaration]
+ 1424 |                 AICWFDBG(LOGINFO, "reord dinit in_irq():%d in_atomic:%d in_softirq:%d\r\n", (int)in_irq()
+      |                                                                                                  ^~~~~~
+/usr/src/linux-headers-7.0.0-31-generic/include/linux/printk.h:483:33: note: in definition of macro ‘printk_index_wrap’
+  483 |                 _p_func(_fmt, ##__VA_ARGS__);                           \
+      |                                 ^~~~~~~~~~~
+aic8800_fdrv/aicwf_debug.h:22:17: note: in expansion of macro ‘printk’
+   22 |                 printk(AICWF_LOG#level")\t" args, ##arg); \
+      |                 ^~~~~~
+aic8800_fdrv/rwnx_rx.c:1424:17: note: in expansion of macro ‘AICWFDBG’
+ 1424 |                 AICWFDBG(LOGINFO, "reord dinit in_irq():%d in_atomic:%d in_softirq:%d\r\n", (int)in_irq()
+      |                 ^~~~~~~~
+  CC [M]  aic8800_fdrv/rwnx_mod_params.o
+cc1: some warnings being treated as errors
+make[5]: *** [/usr/src/linux-headers-7.0.0-31-generic/scripts/Makefile.build:289：aic8800_fdrv/rwnx_rx.o] 错误 1
+make[5]: *** 正在等待未完成的任务....
+make[4]: *** [/usr/src/linux-headers-7.0.0-31-generic/scripts/Makefile.build:548：aic8800_fdrv] 错误 2
+make[3]: *** [/usr/src/linux-headers-7.0.0-31-generic/Makefile:2134：.] 错误 2
+make[2]: *** [/usr/src/linux-headers-7.0.0-31-generic/Makefile:248：__sub-make] 错误 2
+make[2]: 离开目录“/AIC8800/drivers/aic8800”
+make[1]: *** [Makefile:248：__sub-make] 错误 2
+make[1]: 离开目录“/usr/src/linux-headers-7.0.0-31-generic”
+make: *** [Makefile:64：modules] 错误 2
+dpkg: 处理软件包 aic8800fdrvpackage (--install)时出错：
+ 已安装 aic8800fdrvpackage 软件包 post-installation 脚本 子进程返回错误状态 2
+在处理时有错误发生：
+ aic8800fdrvpackage
+
