@@ -1400,7 +1400,7 @@ static void rwnx_radar_cac_work(struct work_struct *ws)
                        &ctxt->chan_def,
                     #endif
                        NL80211_RADAR_CAC_FINISHED, GFP_KERNEL
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+#ifdef AIC_CFG80211_CAC_LINK_ID
                        , 0
 #endif
                        );
@@ -1504,7 +1504,7 @@ void rwnx_radar_cancel_cac(struct rwnx_radar *radar)
                            &ctxt->chan_def,
                         #endif
                            NL80211_RADAR_CAC_ABORTED, GFP_KERNEL
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 1, 0)
+#ifdef AIC_CFG80211_CAC_LINK_ID
                            , 0
 #endif
                            );

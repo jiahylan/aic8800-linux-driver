@@ -1,50 +1,48 @@
 #!/bin/bash
-set -e
-
+set -euo pipefail
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
+case "${1:-}" in
+    configure) ;;
+    abort-upgrade|abort-remove|abort-deconfigure) exit 0 ;;
+    *) exit 0 ;;
+esac
 PACKAGE_NAME="aic8800"
-PACKAGE_VERSION="1.2.0"
+PACKAGE_VERSION="1.3.1"
 SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
 FW_SRC="/AIC8800"
-
-echo "Installing AIC8800 WiFi driver (DKMS)..."
-
-# udev rules
-cp ${FW_SRC}/aic.rules /etc/udev/rules.d/
-udevadm trigger
-udevadm control --reload
-echo "udev rules installed."
-
-# eject virtual CD-ROM if present
-if [ -L /dev/aicudisk ]; then
-    eject /dev/aicudisk
+kernel=$(uname -r)
+if [[ ! -f "/lib/modules/$kernel/build/include/config/auto.conf" ]]; then
+    echo "ERROR: Prepared headers for $kernel are missing." >&2
+    echo "Use the .run installer, or install linux-headers-$kernel before retrying." >&2
+    exit 1
 fi
-
-# firmware
-rm -rf /lib/firmware/aic8800DC
-cp -rf ${FW_SRC}/fw/aic8800DC /lib/firmware/
-echo "Firmware installed."
-
-# install source to /usr/src for DKMS
-if [ -d "${SRC}" ]; then
-    dkms remove -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION} --all 2>/dev/null || true
-    rm -rf "${SRC}"
+# Do not fetch dependencies from here: dpkg already holds the APT locks.
+mkdir -p "$SRC"
+cp -a "$FW_SRC/drivers/aic8800/." "$SRC/"
+if ! dkms status -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" | grep -q .; then
+    dkms add -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION"
 fi
-mkdir -p "${SRC}"
-cp -a ${FW_SRC}/drivers/aic8800/* "${SRC}/"
-
-# register and build with DKMS
-dkms add -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
-dkms build -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
-dkms install -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION}
-echo "DKMS modules built and installed."
-
-# compile test tools (not kernel modules, build for running kernel only)
-cd ${FW_SRC}/aicrf_test/
-make clean || true
-nice -n 19 make
-make install
-echo "Test tools installed."
-
-udevadm trigger
-echo "AIC8800 WiFi driver installed successfully!"
-exit 0
+if ! dkms build -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" -k "$kernel" -j 4; then
+    echo "ERROR: Build failed. See /var/lib/dkms/$PACKAGE_NAME/$PACKAGE_VERSION/build/make.log" >&2
+    exit 1
+fi
+# Build the replacement before retiring older DKMS registrations. Keep loaded
+# modules in memory so a network connection is not interrupted by this script.
+while IFS= read -r old; do
+    [[ -n "$old" && "$old" != "$PACKAGE_VERSION" ]] || continue
+    dkms remove -m "$PACKAGE_NAME" -v "$old" --all
+done < <(dkms status -m "$PACKAGE_NAME" | sed -nE 's@^aic8800/([^,: ]+).*@\1@p' | sort -u)
+dkms install -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" -k "$kernel" --force
+install -d /lib/firmware/aic8800DC /etc/udev/rules.d
+cp -a "$FW_SRC/fw/aic8800DC/." /lib/firmware/aic8800DC/
+install -m 644 "$FW_SRC/aic.rules" /etc/udev/rules.d/aic.rules
+if command -v udevadm >/dev/null; then
+    udevadm control --reload-rules || true
+fi
+# Preserve the vendor diagnostic tools; build from source for the host architecture.
+tools_dir=$(mktemp -d)
+trap 'rm -rf -- "$tools_dir"' EXIT
+cp -a "$FW_SRC/aicrf_test/." "$tools_dir/"
+nice -n 19 make -C "$tools_dir" -j 2
+install -m 755 "$tools_dir/wifi_test" "$tools_dir/bt_test" /usr/sbin/
+echo "AIC8800 $PACKAGE_VERSION installed for $kernel. Reboot or reconnect the adapter."

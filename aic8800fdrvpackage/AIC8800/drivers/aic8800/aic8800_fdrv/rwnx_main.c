@@ -1076,8 +1076,10 @@ static void rwnx_csa_finish(struct work_struct *ws)
         } else
             rwnx_txq_vif_stop(vif, RWNX_TXQ_STOP_CHAN, rwnx_hw);
         spin_unlock_bh(&rwnx_hw->cb_lock);
-#if (LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION)
-		cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0);
+#ifdef AIC_CFG80211_CH_SWITCH_PUNCT
+        cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0, 0);
+#elif defined(AIC_CFG80211_CH_SWITCH_LINK_ID)
+        cfg80211_ch_switch_notify(vif->ndev, &csa->chandef, 0);
 #else
 		cfg80211_ch_switch_notify(vif->ndev, &csa->chandef);
 #endif
@@ -4738,8 +4740,12 @@ static int rwnx_cfg80211_channel_switch(struct wiphy *wiphy,
         goto end;
     } else {
         INIT_WORK(&csa->work, rwnx_csa_finish);
-#if LINUX_VERSION_CODE >= HIGH_KERNEL_VERSION2
-		cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0, params->count, false);
+#ifdef AIC_CFG80211_CH_SWITCH_STARTED_PUNCT
+        cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0,
+                                         params->count, false, 0);
+#elif defined(AIC_CFG80211_CH_SWITCH_STARTED_LINK_ID)
+        cfg80211_ch_switch_started_notify(dev, &csa->chandef, 0,
+                                         params->count, false);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 11, 0)
 		cfg80211_ch_switch_started_notify(dev, &csa->chandef, params->count, params->block_tx);
 #else

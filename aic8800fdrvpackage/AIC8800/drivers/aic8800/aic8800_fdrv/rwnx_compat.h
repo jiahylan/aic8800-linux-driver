@@ -22,6 +22,13 @@
 #ifndef _RWNX_COMPAT_H_
 #define _RWNX_COMPAT_H_
 #include <linux/version.h>
+#include <linux/timer.h>
+
+/* Renamed in newer kernels; both macros recover the enclosing timer owner. */
+#ifndef timer_container_of
+#define timer_container_of(var, callback_timer, timer_fieldname) \
+    from_timer(var, callback_timer, timer_fieldname)
+#endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 10, 0)
 #error "Minimum kernel version supported is 3.10"
@@ -430,10 +437,14 @@ enum {
 typedef __s64 time64_t;
 #endif
 
-/* KERNEL 6.0+: in_irq() and in_interrupt() removed */
+/* Keep compatibility aliases only when kernel headers do not provide them. */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 0, 0)
+#ifndef in_irq
 #define in_irq()       in_hardirq()
+#endif
+#ifndef in_interrupt
 #define in_interrupt() (!in_task())
+#endif
 #endif
 
 #endif /* _RWNX_COMPAT_H_ */

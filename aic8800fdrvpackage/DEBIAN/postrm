@@ -1,3 +1,4 @@
 #!/bin/bash
-echo "AIC8800 WiFi driver uninstalled."
+set -eu
+# No driver removal during upgrade: the new package owns the shared files.
 exit 0

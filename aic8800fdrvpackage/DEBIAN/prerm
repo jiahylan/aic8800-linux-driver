@@ -1,32 +1,17 @@
 #!/bin/bash
-
+set -euo pipefail
+export PATH="/usr/sbin:/usr/bin:/sbin:/bin"
 PACKAGE_NAME="aic8800"
-PACKAGE_VERSION="1.2.0"
-SRC="/usr/src/${PACKAGE_NAME}-${PACKAGE_VERSION}"
-
-echo "Removing AIC8800 WiFi driver (DKMS)..."
-
-# unload modules
-rmmod aic8800_fdrv 2>/dev/null || true
-rmmod aic_load_fw 2>/dev/null || true
-
-# remove from DKMS
-dkms remove -m ${PACKAGE_NAME} -v ${PACKAGE_VERSION} --all 2>/dev/null || true
-
-# remove source tree
-rm -rf "${SRC}"
-
-# remove udev rules
-rm -f /etc/udev/rules.d/aic.rules
-udevadm control --reload
-
-# remove firmware
-rm -rf /lib/firmware/aic8800DC/
-
-# remove installed test tools
-rm -f /sbin/wifi_test /sbin/bt_test
-
-depmod -a 2>/dev/null || true
-
-echo "AIC8800 WiFi driver removed."
-exit 0
+PACKAGE_VERSION="1.3.1"
+case "${1:-}" in
+    remove|deconfigure)
+        if command -v dkms >/dev/null && dkms status -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" | grep -q .; then
+            dkms remove -m "$PACKAGE_NAME" -v "$PACKAGE_VERSION" --all
+        fi
+        rm -rf -- "/usr/src/$PACKAGE_NAME-$PACKAGE_VERSION"
+        rm -f /etc/udev/rules.d/aic.rules /usr/sbin/wifi_test /usr/sbin/bt_test
+        rm -rf /lib/firmware/aic8800DC
+        if command -v udevadm >/dev/null; then udevadm control --reload-rules || true; fi
+        ;;
+    upgrade|failed-upgrade) ;; # postinst replaces the registration after building
+esac
